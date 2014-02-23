@@ -1,0 +1,810 @@
+# Data formats consist of 4 lines:
+# - the (unique!) name plus (optional) options.
+# - the regexp to match the received server notice with.
+# - the format in which to display the message.
+# - the name(s) of the window to display the message to plus (optional)
+#   the message level of the message.
+
+# The options behind the name are, for now, only "continuematching".
+# If this is present, the script will continue matching if this regexp
+# has been matched. The default behaviour is to stop once a match has been
+# found.
+
+# In the format, $0 is the server tag, and $1 .. $n are the matched strings
+# of the regular expression.
+
+# Message level is CRAP by default. Use "MSG" to get a normal message
+# hilight, and HILIGHT for a hilight.
+# Use any number of target windows to send the message to. For example,
+# "client local HILIGHT" will send the reformatted notice to both the windows
+# 'client' and 'local' with message level HILIGHT.
+
+# There is one special window, which is "devnull". If a matched server
+# notice has "devnull" as target, this notice will be discarded.
+
+# The letter in square brackets in the comment is the user mode that needs
+# to be set to see these messages.
+
+# Default target window names (incomplete list):
+# client  - connect, quit, spoof
+# kill    - kill, kline
+# warning - possible flood
+# oper    - oper, failed oper
+# operspy - Operspy
+# server  - netsplit, netjoin
+# misc    - Misc crap I didn't know where to put
+# rest    - the rest
+
+###############################################################################
+#####################################RATBOX####################################
+###############################################################################
+
+########CLIENT#########
+
+# [c] Client connect
+# nick, user, host, ip, class, realname
+ratbox_client_connect_mode_c
+Client connecting: (.*) \((.*)@(.*)\) \[(.*)\] {(.*)} \[(.*)\]
+[$0] %gCONNECT%n  %_$1%_ ($2@$3) ($4) in $5.
+client
+
+# [c] Client exit
+# nick, user, host, reason, ip
+ratbox_client_exit_mode_c
+Client exiting: (.*) \((.*)@(.*)\) \[(.*)\] \[([Cc]onnection [Cc]losed)\]
+[$0] %rEXIT%n     %_$1%_ ($2@$3) [$5] ($4)
+client
+
+# [C] Client Connect
+# nick, user, host, ip, class, realname
+ratbox_client_connect_econnect
+CLICONN ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) [0-9]{1,2} (.*)
+[$0] %gECONNECT%n %_$1%_ ($2@$3) [$4] [$5] [$6] [$7] ($8)
+client
+
+# [C] Client exit
+# nick, user, host, reason, ip
+ratbox_client_exit_eexit
+CLIEXIT:? ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) [0-9]{1,2} (.*)
+[$0] %rEEXIT%n    %_$1%_ ($2@$3) [$4] ($5)
+client
+
+# [n] Nick change
+# oldnick, newnick, user, host
+ratbox_nickchange
+Nick change collision from (.*) to (.*)\((.*)\)\((.*)\)
+[$0] %cNICK%n $1 ($2) [$3].
+client
+
+#########KILL###########
+
+# [?] Kill
+# nick, killer, path, reason
+ratbox_kill
+Received KILL message for (.*)\. From (.*) Path: ([^ ]*) \((.*)\)
+[$0] %RKILL%n $1 by $2 ($4).
+kill
+
+# [?] Kill
+# nick, killer, path, reason
+ratbox_kill_server
+Received KILL message for (.*)\. From (.*) \((.*)\)
+[$0] %RSKILL%n $1 by $2 ($3).
+kill
+
+########WARNINGS#########
+
+# [b] Flood
+# nick, user, host, server, target
+ratbox_poss_flood
+Possible Flooder (.*)\[(.*)@(.*)\] on (.*) target: (.*)
+[$0] %rFLOOD%n $1!$2@$3 ($4) target $5.
+warning HILIGHT
+
+# [?] Attempt to join juped channel
+# nick, user, host, channel
+ratbox_user_join_juped
+User (.*) \((.*)@(.*)\) is attempting to join locally juped channel (.*)
+[$0] %YJUPE%n $4: $1 ($2@$3)
+warning
+
+# [?] Possible Spam Bot
+# nick, user, host, channel
+ratbox_user_spam
+User (.*) \((.*)@(.*)\) trying to join (.*) is a possible spambot
+[$0] %YSPAM%n $4: $1 ($2@$3)
+warning
+
+# [?] Possible Spam Bot
+# nick, user, host, channel
+ratbox_user_spammer
+User (.*) \((.*)\@(.*)\) is a possible spambot
+[$0] %YSPAMMER%n $1 ($2@$3)
+warning
+
+# [f] Too many on IP
+# nick, user, host, ip
+ratbox_too_many_on_ip
+Too many on IP for (.*)\[(.*)@(.*)\] \((.*)\)
+[$0] %CIP%n $4: $1 ($2@$3).
+warning MSG
+
+##########OPER##########
+
+# [?] Oper
+# nick, user, host
+ratbox_oper
+(.*) \((.*)@(.*)\) is now an operator
+[$0] %YOPER%n $1 ($2@$3).
+oper HILIGHT
+
+# [?] Failed oper attempt
+# nick, user, host
+ratbox_oper_failed
+Failed OPER attempt - host mismatch by (.*) \((.*)@(.*)\)
+[$0] %ROPERFAIL%n $1 ($2@$3).
+oper HILIGHT
+
+##########SERVER##########
+
+# [x] Server join
+# source, target
+ratbox_server_join
+Server (.*) being introduced by (.*)
+[$0] %gJOIN%n $1 joined $2.
+server
+
+# [x] Server split
+# source, target
+ratbox_server_split
+Server (.*) split from (.*)
+[$0] %rSPLIT%n $1 split from $2.
+server
+
+# [x] Server split
+# source, target
+ratbox_server_connect_error
+Error connecting to (.*)\[(*.)\]\: (.*)
+[$0] %rConnection Error%n Server: $1 Error: $2.
+server HILIGHT
+
+# [x] Server split
+# source, target
+ratbox_server_connect_error_alt
+ERROR \:from (.*) -- Closing Link: (.*)
+[$0] %rConnection Error%n Server: $1 Error: $2.
+server HILIGHT
+
+# [x] Server Closed Connection
+# source, target
+ratbox_server_closed_connection
+Server (.*) closed the connection
+[$0] %rConnection Closed%n Server: $1
+server HILIGHT
+
+# [x] Server Closed Connection Time
+# source, target
+ratbox_server_closed_connection_time
+(.*) was connected for (.*) seconds.  (.*)
+[$0] %rConnection Closed%n Server: $1 Connected for $2 seconds [$3]
+server HILIGHT
+
+# [x] Server Closed Connection Time
+# source, target
+ratbox_server_SlinkError
+SlinkError for (.*)\: read failed on network: (.*)
+[$0] %rConnection Closed%n Server: $1 Error: $2
+server HILIGHT
+
+# [x] Network Split Mode Activated
+ratbox_server_network_split_activated
+Network split, activating splitmode
+[$0] %rNetwork Split%n Split mode activated.
+server
+
+# [x] Network Split Mode Deactivated
+ratbox_server_network_split_deactivated
+Network rejoined, deactivating splitmode
+[$0] %gNetwork Rejoin%n Split mode deactivated.
+server HILIGHT
+
+# [x] Server SSLD Error
+ratbox_server_ssld_error
+ssld error for (.*): (.*)
+[$0] %rSSLD ERROR%n Server: $1 $2
+server HILIGHT
+
+# [x] Server Link Established
+ratbox_server_link_established
+Link with (.*) established: \((.*)\) link
+[$0] %gServer Link%n Server: $1 established with the following modes: $2
+server HILIGHT
+
+# [x] Server Link Burst
+ratbox_server_link_burst
+End of burst \(emulated\) from (.*) \((.*)\)
+[$0] %gServer Burst%n $1 completed burst, took $2
+server HILIGHT
+
+# [x] Server split
+# source, target
+ratbox_server_unauthorized
+Unauthorised server connection attempt from \[(.*)\]\: (.*)
+[$0] %rUnauthorized%n Server: $2
+server HILIGHT
+
+#########OPERSPY##########
+
+# [z] OPERSPY WHOIS
+# nick, user, host, server
+ratbox_operspy_whois
+OPERSPY (.*)!((.*)@(.*))(.*) WHOIS (.*)!((.*)@(.*)) (.*)
+[$0] %cOPERSPY%n WHOIS %r$6%n!$7 %g$1%n!$2
+operspy HILIGHT
+
+# [z] OPERSPY WHO and MODE
+# nick, user, host, server
+ratbox_operspy_who-mode
+OPERSPY (.*)!((.*)@(.*))(.*) (.*) (.*)
+[$0] %cOPERSPY%n $6 %r$7%n %g$1%n!$2
+operspy HILIGHT
+
+#########Local##########
+
+# [?] Spoof
+# nick, realhost, spoofhost
+ratbox_spoof
+(.*) spoofing: (.*) as (.*)
+[$0] %ySPOOF%n $1@$2 ($3).
+local HILIGHT
+
+# [s] Whois
+# nick, user, host
+ratbox_whois_me
+(.*) \((.*)@(.*)\) is doing a (.?WHOIS|whois) on you.?
+[$0] %GWHOIS%n $1 ($2@$3)
+local HILIGHT
+
+# [s] Resv
+# nick, user, host
+ratbox_resv
+(.*)\sadded\sRESV\sfor\s\[(.*)\]\s\[(.*)\]
+[$0] %GRESV%n $1 added a resv for ($2) reason ($3)
+line HILIGHT
+
+# [s] add_resv
+# nick, user, host
+ratbox_add_resv
+Added RESV for \[(.*)\]\s\[(.*)\]
+[$0] %GADDRESV%n added a resv for ($1) for ($2)
+line HILIGHT
+
+# [s] del_resv
+# nick, user, host
+ratbox_del_resv
+RESV for \[(.*)\] is removed
+[$0] %GDELRESV%n Remove a resv for ($1)
+local HILIGHT
+
+# [s] Unresv
+# nick, user, host
+ratbox_unresv
+(.*)\shas\sremoved\sthe\sRESV\sfor.*\[(.*)\]
+[$0] %GUNRESV%n $1 removed resv for ($2)
+local HILIGHT
+
+# [?] New max local clients
+# number
+ratbox_max_local_clients
+New Max Local Clients: (.*)
+[$0] %CMAX%n $1
+local
+
+# [?] STATS <letter>
+# letter, nick, user, host, server
+ratbox_stats_requested_other
+STATS (.) requested by (.*) \((.*)@(.*)\) \[(.*)\] on (.*)
+[$0] %ySTATS%n $1 requested by $2 ($3@$4) path $5 on $6
+local MSG
+
+# [?] STATS <letter>
+# letter, nick, user, host, server
+ratbox_stats_requested
+STATS (.) requested by (.*) \((.*)@(.*)\) \[(.*)\]
+[$0] %ySTATS%n $1 requested by $2 ($3@$4) path $5
+local MSG
+
+# [?] LINKS
+# arg, nick, user, host, server
+ratbox_links_requested
+LINKS '(.*)' requested by (.*) \((.*)@(.*)\) \[(.*)\]
+[$0] %cLINKS%n '$1' $2($3@$4) $5.
+local MSG
+
+# [y] MOTD
+# nick, user, host, server
+ratbox_motd_requested
+motd requested by (.*) \((.*)@(.*)\) \[(.*)\]
+[$0] %cMOTD%n $1 ($2@$3) $4.
+local
+
+# [y] TRACE
+# nick, user, host, server
+ratbox_trace_requested
+trace requested by (.*) \((.*)@(.*)\) \[(.*)\]
+[$0] %cTRACE%n $1 ($2@$3) $4.
+local
+
+# [y] Admin Requested
+# nick, host, server
+ratbox_admin_requested
+admin requested by\s(.*)\s\((.*)\)\s\[(.*)\]
+[$0] %cADMIN%n $1 ($2) from $3.
+local HILIGHT
+
+# [y] Info Requested
+# nick, host, server
+ratbox_info_requested
+info requested by\s(.*)\s\((.*)\)\s\[(.*)\]
+[$0] %cINFO%n $1 ($2) from $3.
+local
+
+# Rehash
+ratbox_rehash
+(.*)!(.*) is rehashing server config file
+[$0] %RREHASH%n Server config rehashed by $1 $2
+local HILIGHT
+
+# Rehash
+ratbox_operstring
+(.*)!(.*) has changed (.*) to (.*)
+[$0] %R$3%n was to $4 by $1 [$2]
+local HILIGHT
+
+#########LINE##########
+
+
+# annoying BOPM is annoying
+# nick, duration, user, host, reason
+ratbox_tkline_added_bopm
+(.*[Bb][Oo][Pp][Mm].*) added temporary ([0-9]+) min\. K-Line for \[(.*)@(.*)\] \[(.*)\]
+[$0] %rTKLINE%n $3@$4 added by [$1] for $2 min: $5.
+botline
+
+# [?] Temporary D-line added
+# # nick, duration, user, host, reason
+ratbox_dline_added
+(.*mesothelioma\.sucks.*) added temporary ([0-9]+) min\. D-Line for \[(.*)\] \[(.*)\]
+[$0] %rTDLINE%n $3 by [$1] for $2 min: $4.
+botline
+
+# [?] Temporary K-line added
+# nick, duration, user, host, reason
+ratbox_tkline_added
+(.*) added temporary ([0-9]+) min\. K-Line for \[(.*)@(.*)\] \[(.*)\]
+[$0] %rTKLINE%n $3@$4 [$1] for $2 min: $5.
+line
+
+# [?] Local Gline
+# nick, duration, user, host, reason
+ratbox_lgline_added
+(.*) adding local GLINE for (.*) 
+[$0] %rLGLINE%n $1 added local Gline for $2.
+line HILIGHT
+
+# [?] Temporary K-line added
+# nick, duration, user, host, reason
+ratbox_tkline_added
+(.*) added K-Line for \[(.*)@(.*)\] \[(.*)\]
+[$0] %rTKLINE%n $3@$4 [$1] for $2 min: $5.
+line
+
+# [?] Temporary K-line expired
+# hostmask
+ratbox_tkline_expired
+Temporary K-line for \[(.*@.*)\] expired
+[$0] %gTKLINE%n $1.
+line
+
+# [?] K-line active
+# nick, user, host
+ratbox_kline_active
+KLINE active for (.*)\[(.*)@(.*)]
+[$0] %cKLINE%n active: $1 ($2@$3).
+line
+
+# [?] X-line active
+# nick, user, host
+ratbox_xline_active
+X-line Rejecting (.*), user (.*) 
+[$0] %yXLINE%n active: ($2) $1.
+line
+
+# [?] Temporary D-line added
+# nick, duration, user, host, reason
+ratbox_dline_added
+(.*) added temporary ([0-9]+) min\. D-Line for \[(.*)\] \[(.*)\]
+[$0] %rDLINE%n $3 [$1] for $2 min: $4.
+line
+
+# [?] Perm DLINE
+# nick, duration, user, host, reason
+ratbox_perm_dline_added
+(.*) added D-Line for \[(.*)\] \[(.*)\]
+[$0] %rDLINE%n $3 [$1] for $2 min: $4.
+line
+
+# [?] D-line active
+# nick, user, host
+ratbox_dline_active
+DLINE active for (.*)\[(.*)@(.*)]
+[$0] %CDLINE%n active: $1 ($2@$3).
+line 
+
+# [?] D-line expired
+# hostmask
+tdline_expired
+Temporary D-line for \[(.*)\] expired
+%GDLINE%n on $1 Expired.
+line
+
+# [?] kline Removed
+# hostmask
+ratbox_kline_removal
+(.*) has removed the temporary K-Line for: \[(.*)\]
+%KLINE Removed%n on $2 by $1
+line
+
+# [?] Gline request
+# opernick, operuser, operhost, server, mask, reason
+gline_request
+(.*)!(.*)@(.*) on (.*) is requesting gline for \[(.*)\] \[(.*)\]
+%cGLINEREQUEST%n $1: $5 [$6]
+line MSG HILIGHT
+
+# [?] Gline Trigger
+# opernick, operuser, operhost, server, mask, reason
+gline_trigger
+(.*)!(.*)@(.*) on (.*) has triggered gline for \[(.*)\] \[(.*)\]
+%CGLINE%n $1: $5 [$6]
+line MSG HILIGHT
+
+# [?] Gline Trigger
+# opernick, operuser, operhost, server, mask, reason
+gline_undernet
+(.*) adding global GLINE for (.*), expiring at (.*):\s(.*)
+[$0] %CGLINE%n $1 added Global GLINE for $2 expires: $3 reason: $4
+line MSG
+
+# [?] Gline Trigger
+gline_active_undernet
+G-line active for (.*)
+[$0] %CGLINE%n Gline active for $1
+line MSG
+
+#############MISC###########
+
+# [c] Client exit
+# nick, user, host, reason, ip
+ratbox_http_proxy
+HTTP Proxy disconnected: \[(.*)\@(.*)\]
+[$0] %rProxy Exit%n ($1@$2).
+misc
+
+# invalid_username
+# nick, host, server
+ratbox_invalid_username
+Invalid username:\s(.*)\s\((.*)\).*
+[$0] %cInvalid Username%n $1 from $2.
+Misc
+
+# nick changes
+# nick, host, server
+ratbox_nick_change
+Nick change: From (.*)\sto\s(.*)\s\[(.*)\]
+[$0] %cNick Change%n from $1 to $2 host: $3.
+Misc
+
+# global connections
+# nick, host, server
+ratbox_global_connections
+Too many global connections for (.*)\!(.*)
+[$0] %cToo many Global Connections%n from $2 using $1.
+Misc
+
+# +r Throttle notices
+ratbox_throttle
+Adding throttle for (.*)
+[$0] %cThrottled%n $1
+Misc
+
+# +d too many connections
+ratbox_too_many_connections
+Too many user connections for (.*)!(.*)
+[$0] %cExceed Connections%n $1 has too many connections from $2
+Misc
+
+# +d too many connections
+ratbox_too_many_local_connections
+Too many local connections for (.*)!(.*)
+[$0] %cExceed Local Connections%n $1 has too many connections from $2
+Misc
+
+#################################################################################
+#####################################FREENODE####################################
+#################################################################################
+
+# [C] Client Connect
+# nick, user, host, ip, class, realname
+freenode_client_connect_global
+Client connecting: (.*)\s\((.*)\)\s\[(.*)\]\s\[(.*)\]
+[$0] %gCONNECT%n %_$1%_ ($2) [$3] [$4]
+client
+
+# [C] Client exit
+# nick, user, host, reason, ip
+freenode_client_exit_global
+Client exiting:\s(.*)\s(\(.*)\)\s\[(.*)\] \[(.*)\] \[(.*)\]
+[$0] %rEXIT%n    %_$1%_ ($2) [$3] ($4)
+client
+
+full_iline SERVERNAME
+I:line is full for (.*)
+[$0 - $1] %n%_FullIline%n %P$2%n
+Misc
+
+frenode_rapid_connect SERVERNAME
+User connecting too fast from (.*).
+[$0 - $1] %n%_Connecting Too Fast%n %P$2%n
+Misc
+
+freenodeflooder SERVERNAME
+Flooder (.*) \[(.*)\] on (.*) \((.*)\)
+[$0 - $1] %rFLOOD%n $2!$3@$4 ($5) target $6.
+warning HILIGHT
+
+freenode_possible_flooder SERVERNAME
+Possible Drone Flooder (.*) \[(.*)\] on (.*) target:\s(.*)
+[$0 - $1] %rFLOOD%n $2!$3@$4 ($5) target $6.
+warning HILIGHT
+
+freenode_spoofing SERVERNAME
+(.*)\sspoofing\s(.*)\sas (.*)from (.*)
+[$0 - $1] %n%_Spoofing%n %P$2%n $3 as $4 from $5
+Misc
+
+# [o] freenode Oper
+# nick, user, host
+freenode_oper SERVERNAME
+(.*) \((.*)\@(.*)\) just activated an O:line, hmmm
+[$0 - $1] %YOPER%n $2 ($3@$4).
+oper HILIGHT
+
+# [o] Freenode Oper failed
+# nick, user, host
+freenode_oper_failed SERVERNAME
+.*Failed OPER attempt - host mismatch by (.*) \([i|n]=(.*)\@(.*)\)
+[$0 - $1] %ROPERFAIL%n $3@$4
+oper
+
+# [o] Freenode Rehashing
+# nick, realhost, spoofhost
+freenode_rehash SERVERNAME
+.*Hashing in (.*)
+[$0 - $1] %yNetwork Rehash% $2
+local
+
+# [o] Freenode Rehashing
+# nick, realhost, spoofhost
+freenode_sighup SERVERNAME
+Got signal SIGHUP, reloading ircd conf. file
+[$0 - $1] %yNetwork SigHUP% reloading ircd
+local
+
+# [o] freenode auto dline
+# server, ip, reason
+freenode_auto_dline SERVERNAME
+.*added D-Line for \[(.*)\] \[(.*)\]
+[$0 - $1] %rDLINE%n of $2 reason: $3
+line 
+
+# [o] freenode auto dline
+# server, ip, reason
+freenode_auto_dline_confirm SERVERNAME
+.*confirms D-Line of (.*)\[n\=(.*)\@(.*)\]
+[$0 - $1] %rDLINE%n of $2|$3 on $4
+line 
+
+freenode_network_record
+New network record: (.*) users \(.*\)
+[$0] %n%_Network%n New record %_$1%_ users reached!
+oper HILIGHT
+
+freenode_config_rehash SERVERNAME
+Hmm, (.*) is rehashing server config file
+[$0 - $1] %n%_Rehash%n %P$2%n is rehashing server config file.
+oper HILIGHT
+
+freenode_bestowed_privileges SERVERNAME
+(.*) has bestowed the power of (.*) onto (.*)
+[$0 - $1] %n%_Privileges%n %P$2%n gave %_$3%_ to %P$4%n
+oper HILIGHT
+
+freenode_split SERVERNAME
+(.*) had been connected for .*
+[$0 - $1] %n%_Split%n      %_$2%n
+server HILIGHT
+
+freenode_split_1 SERVERNAME
+(.*) was connected to (.*) for (.*)
+[$0 - $1] %n%_Split%n %_$2%n from $3 reason: $4
+server HILIGHT
+
+freenode_split_pass SERVERNAME
+Sent password challenge to (.*)
+[$0 - $1] %n%_Sent Pass%n $2
+server HILIGHT
+
+freenode_split_response SERVERNAME
+Got a good password response from (.*)
+[$0 - $1] %n%_Pass Response Good%n $2
+server HILIGHT
+
+freenode_challenge_server SERVERNAME
+Challenge for (.*) rejected, server already exists
+[$0 - $1] %n%_Challenge%n $2 server exists
+server HILIGHT
+
+freenode_write_error SERVERNAME
+Write error to (.*), closing link
+[$0 - $1] %n%_WriteError%n %_$2%n
+server HILIGHT
+
+freenode_operserv SERVERNAME
+OperServ: (.*) from (.*)!\w=(.*)\@(.*) for (.*)
+[$0 - $1] %n%_$2%n by $3!$4@$5 for $6
+misc HILIGHT
+
+freenode_operserv_short SERVERNAME
+OperServ: (.*)\s(.*) by (.*)
+[$0 - $1] %n%_$2%n by $4 of $3
+misc HILIGHT
+
+freenode_ghosted SERVERNAME
+Ghosted: (.*) from (.*)
+[$0 - $1] %n%_$2%n was ghosted on $3
+misc
+
+freenode_user_record SERVERNAME
+New local record: (.*) users
+[$0 - $1] %n%_Local User Record%n of $2
+local
+
+freenode_nick_collision SERVERNAME
+Nick collision on (.*)\((.*)\)\((.*)\)
+[$0 - $1] %n%_Collision%n of $2 on $3 ($4)
+kill
+
+freenode_spam_bot SERVERNAME
+User (.*) \(\w\=(.*)\@(.*) is a possible spambot
+[$0 - $1] %n%_SPAMMER%n $2 $3@$4
+warning
+
+freenode_expired_kline
+Expiring K:line on (.*)
+[$0] %n%_KLINE Expired%n $1
+line
+
+freenode_kline_removed
+(.*) has removed the K-Line for: (.*)
+[$0] %n%_KLINE Removed%n $1 removed $2
+line
+
+freenode_bad_login SERVERNAME
+Warning: Numerous failed login attempts to (.*)\. Last attempt received from (.*) on (.*)\.
+[$0 - $1] %n%_Services%n Bad Login from $2 $3 at $4 
+misc
+
+freenode_collision SERVERNAME
+Nick change collision from (.*) to (.*)\((.*)\)\((.*)\)
+[$0 - $1] %n%_Collision%n $2 collided with $3 on servers $4 Solution was $5 
+misc
+
+freenode_nick_drop SERVERNAME
+(.*) dropped the account (.*)
+[$0 - $1] %n%_NickServ Drop%n $2 Dropped $3 
+misc
+
+#################################################################################
+#####################################QUAKENET####################################
+#################################################################################
+
+oper_quakenet
+(.*) \((.*)@(.*)\) is now an operator \(.*\) as (.*)
+[$0] %YOPER%n $1 ($2@$3) Account: $5.
+oper
+
+# settime
+quakenet_setting
+(.*) from (.*), (.*)
+[$0] %c$1%n $2 $3
+Misc
+
+quakenet_hack
+HACK\(2\)\: (.*)
+[$0] %rHACK%n $1.
+misc
+
+quakenet_nick_collision
+Nick collision on (.*)
+[$0] %rNick Collision%n $1
+kill
+
+# Global
+quakenet_global SERVERNAME
+(.*) global (.*) for (.*), expiring at (.*): (.*)
+[$0 - $1] %c$3%n $2 $4 Expires: $5 Reason: $6
+Misc
+
+#################################################################################
+#####################################UNDERNET####################################
+#################################################################################
+
+# nick, user, host, ip, class, realname
+client_undernet_connect
+Client connecting:\s(.*)\s\((.*)@(.*)\)\s\[(.*)\]\s(.*)\s\[(.*)\]\s(.*)
+[$0] %GCONN%n $1 ($2@$3) ($4) in $5, $6 $7.
+client
+
+# [x] Net Junction
+# source, target
+undernet_junction
+Net junction: (.*)\s(.*)
+[$0] %rJOIN%n $2 joined $1.
+server
+
+# [x] Net Break
+# source, target
+undernet_break
+Net\sbreak:.*\s(.*\.[O|o]rg)\s(.*\.[O|o]rg)\s.*\((.*)\).*
+[$0] %rSPLIT%n $2 split from $1. ($3)
+server
+
+# [x] Net Burst
+# source, target
+undernet_burst
+Completed net.burst (.*)
+[$0] %rBurst%n $1.
+server
+
+# [x] Net Junction
+# source, target
+undernet_end_burst
+(.*) acknowledged end of net.burst.
+[$0] %rEnd Burst%n $1 acknowledged end of net.burst.
+server
+
+# [?] New max local clients
+# number
+undernet_max_local_clients
+Maximum connections: (.*)
+[$0] %CMAX%n $1
+local
+
+# [y] nick change
+undernet_nick change
+Nick change collision from (.*)
+[$0] Nick change collision from $1
+Misc
+
+#############################################################################
+################################CATCHALL#####################################
+#############################################################################
+
+# Catchall for the rest
+catchall
+(.*)
+[$0] REST: $1
+rest HILIGHT
+
+# EOF
