@@ -45,7 +45,7 @@ for line in fh:
 			}
 			rbans.append( rban )
 
-#print( "Parsed " + str(len(rbans)) + " rbans.\n\n")
+#An example of using the parsed data structures:
 for i in range(0, len(rbans)):
 	if '(r#35)' in rbans[i]['regexp_num']:
 		#print_rban( rbans[i] )
