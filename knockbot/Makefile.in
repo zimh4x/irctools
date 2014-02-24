@@ -1,0 +1,20 @@
+CC=@CC@
+
+BIN=../../../modules/knockbot.so
+DEBUG=@DEBUG@
+DEFINES=@DEFINES@
+INCLUDES=@INCLUDES@ -I../include -I../../../include
+CFLAGS=${DEBUG} ${DEFINES} ${INCLUDES} -Wall -O3 -march=nocona -pipe -fPIC
+LFLAGS=${DEBUG} ${DEFINES} ${INCLUDES} -Wall -O3 -o
+LIBS=@LIBS@
+OBJS=knockbot.o
+LIBEXEC=@LIBEXEC@
+
+all: ${OBJS} 
+	${LIBEXEC}
+
+*.c.${O}:
+	${CC} ${CFLAGS} $*.c
+
+clean:
+	rm -f *.o ${BIN}
