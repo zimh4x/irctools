@@ -8,5 +8,6 @@
 
 * klines.py and testmask.py -- are intended to quickly convert large lists of hosts into copy/pastable commands for use on hybrid or ratbox ircds.  They are essentially the same function but different commands.  I found it easier/faster to react, to just have two scripts instead of editing the same one each time.
 
+* rban.py -- This is a relatively recent tool.  It parses the output of rizon services bots when hosts are banned from the network for matching an regular-expression ban or "Rban".  It is possible to concatenate all logs from places where these ban matches/announcements occur and then parse the log file into a python dictionary structure for easy access and additional analysis.  NOTE: This script is currently made to ignore IPv6 addresses due to the fact that services uses a ":" as a field delimiter.  I have noted this with dev team and expect a fix in the coming months.
 
 more to come in this repo as I dig through years of little hacked together tools over various shell and colo archives of min.!  -zz
